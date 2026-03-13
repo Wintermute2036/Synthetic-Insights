@@ -110,15 +110,15 @@ Cesium.js handles the 3D visualization layer. A Python backend manages API calls
 - [x] Architecture defined
 - [x] Data sources selected and verified
 - [x] README written and formatted
-- [x] GitHub repo created (private)
+- [x] GitHub repo created (now public)
 - [x] .gitignore configured (.env protected)
 - [x] VS Code installed
-- [ ] Repo cloned to local machine
-- [ ] Project folder structure created
-- [ ] Python packages installed (flask, flask-cors, requests, python-dotenv)
-- [ ] Cesium.js ion token obtained
-- [ ] USGS seismic feed (first build target)
-- [ ] Cesium globe rendering seismic data (first working milestone / repo goes public)
+- [x] Repo cloned to local machine
+- [x] Project folder structure created
+- [x] Python packages installed (flask, flask-cors, requests, python-dotenv)
+- [x] Cesium.js ion token obtained
+- [x] USGS seismic feed working
+- [x] Cesium globe rendering seismic data — **MILESTONE 1 COMPLETE**
 - [ ] OpenSky flight tracking
 - [ ] aisstream.io vessel tracking
 - [ ] Shodan infrastructure layer
@@ -126,7 +126,7 @@ Cesium.js handles the 3D visualization layer. A Python backend manages API calls
 - [ ] Cell tower and power grid layers
 - [ ] Tor exit node layer
 - [ ] Data fusion logic
-- [ ] Visual filter modes
+- [ ] Visual filter modes (CRT, night vision, FLIR)
 
 
 ---
