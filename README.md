@@ -57,8 +57,8 @@ Cesium.js handles the 3D visualization layer. A Python backend manages API calls
 
 ## Purpose
 
-This project serves as a functional demonstration of open source intelligence aggregation, a cybersecurity portfolio artifact, and an ongoing documentation of what one person and an AI collaborator can build with public tooling and genuine curiosity.
-
+This project serves as a functional demonstration of open source intelligence aggregation, a cybersecurity portfolio artifact, and an ongoing documentation of what one person and an AI collaborator can build with public tooling and genuine curiosity. 
+This project exists because the data is already public. Most people just aren't looking at it in the same place at the same time.
 ---
 
 ## Legal
@@ -70,7 +70,15 @@ All data sources are publicly available APIs used within their documented terms 
 ## Mascot
 
 The Wintermute2036 mascot is a feminine AI entity with circuit-tendril hair, asymmetric eyes (red left, green right), PCB traces across the face, and a green all-seeing eye pyramid motif. SHODAN-inspired aesthetic, original character. SVG source maintained separately in repo assets. Design will evolve alongside the project.
+---
 
+## Status
+- [x] Architecture defined
+- [x] Data sources selected
+- [ ] Project scaffold
+- [ ] USGS seismic feed (in progress)
+- [ ] Cesium globe rendering
+- [ ] Additional feeds
 ---
 
 *Built by Wintermute2036. Work in progress.*
