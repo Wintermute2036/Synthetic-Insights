@@ -145,10 +145,4 @@ This project is explicitly scoped to infrastructure, signals, and environmental 
 
 ---
 
-## Mascot
-
-The Wintermute2036 mascot is a feminine AI entity with circuit-tendril hair, asymmetric eyes (red left, green right), PCB traces across the face, and a green all-seeing eye pyramid motif. SHODAN-inspired aesthetic, original character. SVG source in `/assets`. Design will evolve alongside the project.
-
----
-
 *Wintermute2036 — work in progress.*
