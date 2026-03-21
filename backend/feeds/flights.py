@@ -105,11 +105,13 @@ def get_flights(bounds=None):
 
         # Guard: skip aircraft with no position fix
         # state[5] = longitude, state[6] = latitude
+        if len(state) < 10:
+            continue
         if state[5] is None or state[6] is None:
             continue
 
         flights.append({
-            "callsign":  state[1].strip() if state[1] else "Unknown",
+            "callsign": str(state[1]).strip() if state[1] else "Unknown",
             "longitude": state[5],
             "latitude":  state[6],
             # Explicit None checks — don't use falsy test on numbers.

@@ -1,5 +1,13 @@
-const CESIUM_TOKEN = 'yJhbGciOiJIeUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJjMDlhZWQ3My0wMTk3LTQ0OGUtYjA3Ny1mZTQxZWIwMmIyMGIiLCJpZCI6NDAzMjk5LCJpYXQiOjE3NzM0MzkyODh9.zmv8J3jQE6wQbtn_5QaTBDP6juDN5IufAgbQY9Ryfa0'
 Cesium.Ion.defaultAccessToken = window.CESIUM_TOKEN;
+
+// --- UTILITY ---
+function sanitize(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 const viewer = new Cesium.Viewer('cesiumContainer', {
   terrain: Cesium.Terrain.fromWorldTerrain()
@@ -9,40 +17,45 @@ const viewer = new Cesium.Viewer('cesiumContainer', {
 const seismicDataSource = new Cesium.CustomDataSource('seismic');
 viewer.dataSources.add(seismicDataSource);
 
-fetch('http://127.0.0.1:5000/api/seismic')
-  .then(res => res.json())
-  .then(data => {
-    data.features.forEach(quake => {
-      const [lon, lat, depth] = quake.geometry.coordinates;
-      const mag = quake.properties.mag;
-      const place = quake.properties.place;
+function loadSeismic() {
+  seismicDataSource.entities.removeAll();
 
-      seismicDataSource.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(lon, lat),
-        point: {
-          pixelSize: Math.max(4, mag * 4),
-          color: Cesium.Color.RED.withAlpha(0.8),
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 1
-        },
-        label: {
-          text: `M${mag} — ${place}`,
-          font: '11px monospace',
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 2,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: new Cesium.Cartesian2(0, -20),
-          show: false
-        },
-        description: `<b>Magnitude:</b> ${mag}<br><b>Depth:</b> ${depth} km<br><b>Location:</b> ${place}`
+  fetch(window.API_BASE + '/api/seismic')
+    .then(res => res.json())
+    .then(data => {
+      data.features.forEach(quake => {
+        const [lon, lat, depth] = quake.geometry.coordinates;
+        const mag = quake.properties.mag ?? 0;
+        const place = quake.properties.place;
+
+        seismicDataSource.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(lon, lat),
+          point: {
+            pixelSize: Math.max(4, mag * 4),
+            color: Cesium.Color.RED.withAlpha(0.8),
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 1
+          },
+          label: {
+            text: `M${mag} — ${place}`,
+            font: '11px monospace',
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 2,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            pixelOffset: new Cesium.Cartesian2(0, -20),
+            show: false
+          },
+          description: `<b>Magnitude:</b> ${sanitize(mag)}<br><b>Depth:</b> ${sanitize(depth)} km<br><b>Location:</b> ${sanitize(place)}`
+        });
       });
-    });
-  });
+    })
+    .catch(err => console.error('Seismic fetch failed:', err));
+}
 
-// --- FLIGHTS LAYER ---
-const flightsDataSource = new Cesium.CustomDataSource('flights');
-viewer.dataSources.add(flightsDataSource);
+// Load immediately, then refresh every 5 minutes
+loadSeismic();
+setInterval(loadSeismic, 300000);
 
 // --- PLANE ICON GENERATOR ---
 function createPlaneIcon(color = '#00FFFF') {
@@ -85,10 +98,17 @@ function createPlaneIcon(color = '#00FFFF') {
   return canvas;
 }
 
+// Generate icon once, reuse for every aircraft
+const PLANE_ICON = createPlaneIcon('#00FFFF').toDataURL();
+
+// --- FLIGHTS LAYER ---
+const flightsDataSource = new Cesium.CustomDataSource('flights');
+viewer.dataSources.add(flightsDataSource);
+
 function loadFlights() {
   flightsDataSource.entities.removeAll();
 
-  fetch('http://127.0.0.1:5000/api/flights')
+  fetch(window.API_BASE + '/api/flights')
     .then(res => res.json())
     .then(data => {
       data.forEach(flight => {
@@ -99,7 +119,7 @@ function loadFlights() {
             flight.altitude
           ),
           billboard: {
-            image: createPlaneIcon('#00FFFF'),
+            image: PLANE_ICON,
             scale: 0.8,
             verticalOrigin: Cesium.VerticalOrigin.CENTER,
             horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
@@ -116,12 +136,13 @@ function loadFlights() {
             show: false,
             scaleByDistance: new Cesium.NearFarScalar(1.5e6, 1.0, 3.0e7, 0.0),
           },
-          description: `<b>Callsign:</b> ${flight.callsign}<br><b>Altitude:</b> ${flight.altitude} m<br><b>Velocity:</b> ${flight.velocity} m/s`
+          description: `<b>Callsign:</b> ${sanitize(flight.callsign)}<br><b>Altitude:</b> ${sanitize(flight.altitude)} m<br><b>Velocity:</b> ${sanitize(flight.velocity)} m/s`
         });
       });
-    });
+    })
+    .catch(err => console.error('Flights fetch failed:', err));
 }
 
-// Load flights immediately then refresh every 30 seconds
+// Load immediately, then refresh every 30 seconds
 loadFlights();
 setInterval(loadFlights, 30000);
