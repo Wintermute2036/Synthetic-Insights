@@ -120,6 +120,7 @@ Cesium.js handles the 3D visualization layer. A Python backend manages API calls
 - [x] USGS seismic feed working
 - [x] Cesium globe rendering seismic data — **MILESTONE 1 COMPLETE**
 - [x] OpenSky flight tracking
+- [x] Code Audit
 - [ ] aisstream.io vessel tracking
 - [ ] Shodan infrastructure layer
 - [ ] Threat intelligence feeds
