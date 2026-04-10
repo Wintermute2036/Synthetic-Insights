@@ -105,19 +105,22 @@ def get_flights(bounds=None):
 
         # Guard: skip aircraft with no position fix
         # state[5] = longitude, state[6] = latitude
-        if len(state) < 10:
+        # Need at least 11 elements to access true_track at index 10
+        if len(state) < 11:
             continue
         if state[5] is None or state[6] is None:
             continue
 
         flights.append({
-            "callsign": str(state[1]).strip() if state[1] else "Unknown",
-            "longitude": state[5],
-            "latitude":  state[6],
+            "icao24":    state[0],                                        # unique aircraft hex ID
+            "callsign":  str(state[1]).strip() if state[1] else "Unknown",
+            "longitude":  state[5],
+            "latitude":   state[6],
             # Explicit None checks — don't use falsy test on numbers.
             # A plane at 0 altitude or 0 velocity is valid data, not missing data.
-            "altitude":  state[7] if state[7] is not None else 0,
-            "velocity":  state[9] if state[9] is not None else 0,
+            "altitude":   state[7] if state[7] is not None else 0,
+            "velocity":   state[9] if state[9] is not None else 0,
+            "heading":    state[10],                                      # true_track: degrees clockwise from north (can be None)
         })
 
     # --- Update cache ---

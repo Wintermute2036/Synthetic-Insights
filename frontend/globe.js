@@ -13,6 +13,9 @@ const viewer = new Cesium.Viewer('cesiumContainer', {
   terrain: Cesium.Terrain.fromWorldTerrain()
 });
 
+// Ensure the clock is running in real time — required for position interpolation
+viewer.clock.shouldAnimate = true;
+
 // --- SEISMIC LAYER ---
 const seismicDataSource = new Cesium.CustomDataSource('seismic');
 viewer.dataSources.add(seismicDataSource);
@@ -101,48 +104,111 @@ function createPlaneIcon(color = '#00FFFF') {
 // Generate icon once, reuse for every aircraft
 const PLANE_ICON = createPlaneIcon('#00FFFF').toDataURL();
 
-// --- FLIGHTS LAYER ---
+// --- FLIGHTS LAYER (Smooth Motion via SampledPositionProperty) ---
 const flightsDataSource = new Cesium.CustomDataSource('flights');
 viewer.dataSources.add(flightsDataSource);
 
-function loadFlights() {
-  flightsDataSource.entities.removeAll();
+// Persistent map: icao24 hex ID → Cesium entity
+// Planes stay alive between polls so Cesium can interpolate their positions
+const flightEntities = new Map();
+
+function updateFlights() {
+  const now = Cesium.JulianDate.now();
 
   fetch(window.API_BASE + '/api/flights')
     .then(res => res.json())
     .then(data => {
+      // Track which aircraft are in this poll so we can prune the rest
+      const activeIcaos = new Set();
+
       data.forEach(flight => {
-        flightsDataSource.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(
-            flight.longitude,
-            flight.latitude,
-            flight.altitude
-          ),
-          billboard: {
-            image: PLANE_ICON,
-            scale: 0.8,
-            verticalOrigin: Cesium.VerticalOrigin.CENTER,
-            horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-            scaleByDistance: new Cesium.NearFarScalar(1.5e6, 1.0, 3.0e7, 0.3),
-          },
-          label: {
-            text: flight.callsign,
-            font: '10px monospace',
-            fillColor: Cesium.Color.CYAN,
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 2,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            pixelOffset: new Cesium.Cartesian2(0, -20),
-            show: false,
-            scaleByDistance: new Cesium.NearFarScalar(1.5e6, 1.0, 3.0e7, 0.0),
-          },
-          description: `<b>Callsign:</b> ${sanitize(flight.callsign)}<br><b>Altitude:</b> ${sanitize(flight.altitude)} m<br><b>Velocity:</b> ${sanitize(flight.velocity)} m/s`
-        });
+        // Skip aircraft without a valid identifier
+        if (!flight.icao24) return;
+
+        activeIcaos.add(flight.icao24);
+
+        const position = Cesium.Cartesian3.fromDegrees(
+          flight.longitude,
+          flight.latitude,
+          flight.altitude
+        );
+
+        // Convert heading: OpenSky gives degrees clockwise from north
+        // Cesium billboard rotation is radians counter-clockwise from screen-up
+        const headingRad = (typeof flight.heading === 'number' && isFinite(flight.heading))
+          ? -Cesium.Math.toRadians(flight.heading)
+          : 0;
+
+        let entity = flightEntities.get(flight.icao24);
+
+        if (entity) {
+          // --- EXISTING AIRCRAFT: feed it a new position sample ---
+          entity.position.addSample(now, position);
+          entity.billboard.rotation = headingRad;
+          entity.label.text = flight.callsign;
+          entity.description =
+            `<b>Callsign:</b> ${sanitize(flight.callsign)}` +
+            `<br><b>Altitude:</b> ${sanitize(flight.altitude)} m` +
+            `<br><b>Velocity:</b> ${sanitize(flight.velocity)} m/s`;
+        } else {
+          // --- NEW AIRCRAFT: create entity with SampledPositionProperty ---
+          const positionProperty = new Cesium.SampledPositionProperty();
+          positionProperty.addSample(now, position);
+
+          // Linear interpolation: plane moves in a straight line between samples
+          positionProperty.setInterpolationOptions({
+            interpolationDegree: 1,
+            interpolationAlgorithm: Cesium.LinearApproximation
+          });
+
+          // Extrapolate forward so planes keep gliding past the last known sample
+          // until the next poll arrives (prevents 30s freezes)
+          positionProperty.forwardExtrapolationType = Cesium.ExtrapolationType.EXTRAPOLATE;
+          positionProperty.forwardExtrapolationDuration = 60;
+
+          entity = flightsDataSource.entities.add({
+            id: flight.icao24,
+            position: positionProperty,
+            billboard: {
+              image: PLANE_ICON,
+              scale: 0.8,
+              rotation: headingRad,
+              verticalOrigin: Cesium.VerticalOrigin.CENTER,
+              horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+              scaleByDistance: new Cesium.NearFarScalar(1.5e6, 1.0, 3.0e7, 0.3),
+            },
+            label: {
+              text: flight.callsign,
+              font: '10px monospace',
+              fillColor: Cesium.Color.CYAN,
+              outlineColor: Cesium.Color.BLACK,
+              outlineWidth: 2,
+              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+              pixelOffset: new Cesium.Cartesian2(0, -20),
+              show: false,
+              scaleByDistance: new Cesium.NearFarScalar(1.5e6, 1.0, 3.0e7, 0.0),
+            },
+            description:
+              `<b>Callsign:</b> ${sanitize(flight.callsign)}` +
+              `<br><b>Altitude:</b> ${sanitize(flight.altitude)} m` +
+              `<br><b>Velocity:</b> ${sanitize(flight.velocity)} m/s`
+          });
+
+          flightEntities.set(flight.icao24, entity);
+        }
       });
+
+      // Prune aircraft that dropped out of the feed (landed, out of range, etc.)
+      for (const [icao, entity] of flightEntities) {
+        if (!activeIcaos.has(icao)) {
+          flightsDataSource.entities.remove(entity);
+          flightEntities.delete(icao);
+        }
+      }
     })
     .catch(err => console.error('Flights fetch failed:', err));
 }
 
 // Load immediately, then refresh every 30 seconds
-loadFlights();
-setInterval(loadFlights, 30000);
+updateFlights();
+setInterval(updateFlights, 30000);
