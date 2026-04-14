@@ -38,6 +38,7 @@ Built entirely on public APIs and documented open source tooling. No proprietary
 
 **Physical & Environmental**
 - **Seismic Activity** — USGS real-time global earthquake data
+- **SAR Imagery** — ESA Sentinel-1 synthetic aperture radar overlays; all-weather, day/night surface and subsurface change detection via InSAR
 - **Wildfire Locations** — NASA FIRMS real-time global fire detection
 - **Weather** — NOAA real-time weather overlays
 - **Space Weather** — NOAA SWPC solar storm and geomagnetic activity
@@ -78,6 +79,7 @@ Built entirely on public APIs and documented open source tooling. No proprietary
 | Threat intelligence | AbuseIPDB | Free tier | Threat |
 | Internet noise | GreyNoise | Free tier | Threat |
 | Seismic activity | USGS Earthquake API | Free | Physical |
+| SAR imagery / InSAR | ESA Sentinel-1 (Copernicus Data Space) | Free | Physical |
 | Wildfire locations | NASA FIRMS | Free | Physical |
 | Weather | NOAA Weather API | Free | Physical |
 | Space weather | NOAA SWPC | Free | Physical |
@@ -119,9 +121,11 @@ Cesium.js handles the 3D visualization layer. A Python backend manages API calls
 - [x] Cesium.js ion token obtained
 - [x] USGS seismic feed working
 - [x] Cesium globe rendering seismic data — **MILESTONE 1 COMPLETE**
-- [x] OpenSky flight tracking
-- [x] Code Audit
+- [x] OpenSky flight tracking — **MILESTONE 3 COMPLETE**
+- [x] Full codebase audit — **MILESTONE 4 COMPLETE**
+- [x] Smooth flight tracking (SampledPositionProperty — planes glide, nose-forward, entity pruning) — **MILESTONE 5 COMPLETE**
 - [ ] aisstream.io vessel tracking
+- [ ] ESA Sentinel-1 SAR imagery layer (all-weather, day/night surface and subsurface change detection)
 - [ ] Shodan infrastructure layer
 - [ ] Threat intelligence feeds
 - [ ] Cell tower and power grid layers
